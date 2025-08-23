@@ -1,0 +1,11 @@
+node_modules
+src
+.github
+.test
+.jest.config.js
+.prettierrc.js
+.idea
+tsconfig.json
+package-lock.json
+README.md
+CHANGELOG.md
