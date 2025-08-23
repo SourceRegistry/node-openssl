@@ -18,15 +18,30 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "test": "vitest"
+    "test": "vitest",
+    "example::server-cert": "tsx examples/server-cert.ts",
+    "example::version": "tsx examples/version",
+    "example::digest-sha256": "tsx examples/digest-sha256"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/SourceRegistry/node-openssl.git"
   },
-  "keywords": [],
+  "keywords": [
+    "openssl",
+    "ssl",
+    "cert",
+    "pem",
+    "key",
+    "privatekey",
+    "publickey",
+    "certificate",
+    "certificates",
+    "chain",
+    "https"
+  ],
   "author": "A.P.A. Slaa (a.p.a.slaa@projectsource.nl)",
-  "license": "ISC",
+  "license": "Apache-2.0",
   "type": "module",
   "bugs": {
     "url": "https://github.com/SourceRegistry/node-openssl/issues"
@@ -41,6 +56,7 @@
     "vite": "^7.1.3",
     "vite-plugin-dts": "^4.5.4",
     "vitest": "^3.2.4",
+    "tsx": "^4.20.4",
     "@semantic-release/commit-analyzer": "^13.0.1",
     "@semantic-release/release-notes-generator": "^14.0.3",
     "@semantic-release/changelog": "^6.0.3",
