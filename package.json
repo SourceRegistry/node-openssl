@@ -1,7 +1,7 @@
 {
   "name": "@sourceregistry/node-openssl",
   "version": "1.0.0",
-  "description": "",
+  "description": "A lightweight, promise-based TypeScript wrapper for executing OpenSSL CLI commands directly from Node.js, with rich buffer enhancements and a fluent, proxy-powered API.",
   "main": "./dist/index.es.js",
   "module": "./dist/index.es.js",
   "types": "./dist/index.d.ts",
