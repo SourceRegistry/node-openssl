@@ -18,6 +18,10 @@ npm install @sourceregistry/node-openssl
 ```
 
 > **Note**: Ensure `openssl` is installed and available in your system's PATH.
+> 
+> If you don't have OpenSSL installed, you have two options:
+> 1. Compile and install from source (https://github.com/openssl/openssl/blob/master/INSTALL.md)
+> 2. Install from a precompile binary (https://github.com/openssl/openssl/wiki/Binaries)
 
 ## Usage
 
