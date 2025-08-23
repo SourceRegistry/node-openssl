@@ -46,8 +46,6 @@ If you dont have OpenSSL installed, you have two options:
         super(stderr);
     }
 
-
-
     static NOT_INSTALLED(err: Error) {
         console.error(this.Messages.NOT_INSTALLED, '\n', err);
     }
@@ -221,6 +219,7 @@ export class OpenSSL {
     public static isOpenSSLBuffer(b: object): b is OpenSSLBuffer {
         return OpenSSL.BufferSymbol in b && b instanceof Buffer
     }
+
     public static isOpenSSLError(obj: any): obj is OpenSSLError {
         return obj instanceof OpenSSLError;
     }
