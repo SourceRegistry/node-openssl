@@ -1,6 +1,6 @@
 {
   "name": "@sourceregistry/node-openssl",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "description": "",
   "main": "./dist/index.es.js",
   "module": "./dist/index.es.js",
