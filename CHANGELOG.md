@@ -1,3 +1,10 @@
+## [1.0.2](https://github.com/SourceRegistry/node-openssl/compare/v1.0.1...v1.0.2) (2025-08-23)
+
+
+### Bug Fixes
+
+* **npm:** added description to package.json ([ef085c3](https://github.com/SourceRegistry/node-openssl/commit/ef085c3bb48084d5a9b8394e91d9083665f376e5))
+
 ## [1.0.1](https://github.com/SourceRegistry/node-openssl/compare/v1.0.0...v1.0.1) (2025-08-23)
 
 
