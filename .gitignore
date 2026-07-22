@@ -141,3 +141,7 @@ vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 
 docs
+.claude
+.codex
+.nova-ai
+.mcp.json
