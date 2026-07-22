@@ -1,3 +1,10 @@
+## [1.0.3](https://github.com/SourceRegistry/node-openssl/compare/v1.0.2...v1.0.3) (2026-07-22)
+
+
+### Bug Fixes
+
+* eliminate shell command injection and leaked key material in OpenSSL.exec ([39c9817](https://github.com/SourceRegistry/node-openssl/commit/39c9817c460763d3efb492fa640f7737adf058d2))
+
 ## [1.0.2](https://github.com/SourceRegistry/node-openssl/compare/v1.0.1...v1.0.2) (2025-08-23)
 
 
