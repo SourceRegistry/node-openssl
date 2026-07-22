@@ -1,5 +1,5 @@
-import {exec} from "child_process";
-import {readdir, mkdtemp, readFile, rmdir, mkdir} from "fs/promises";
+import {execFile} from "child_process";
+import {readdir, mkdtemp, readFile, rm, mkdir} from "fs/promises";
 import {writeFileSync} from "fs";
 import {extname, join} from "path";
 import {createHash, createPrivateKey, createPublicKey, createSecretKey, randomUUID, KeyObject} from "crypto";
@@ -53,30 +53,89 @@ If you dont have OpenSSL installed, you have two options:
 }
 
 /**
- * Merges an array of strings and buffers into a flat, interleaved array.
+ * Tokenizes a tagged-template invocation into discrete argv-style tokens, the same way a shell
+ * would split a command line into words — except interpolated values are never re-split or
+ * re-interpreted, no matter what characters (spaces, quotes, `;`, `$()`, backticks, ...) they contain.
+ *
+ * Only the *static* template text participates in word-splitting/quote-grouping; each interpolated
+ * value is either glued (stringified) into the token it's textually adjacent to, or, if it stands
+ * alone on a word boundary, kept as-is (so a lone `${buffer}` survives as a real Buffer for the
+ * temp-file handling in `exec`). This is what lets `OpenSSL.exec` run via `execFile` (no shell)
+ * while still supporting natural `openssl\`req -subj "/CN=${host}"\`` syntax safely.
+ *
+ * @param strings - Static string parts of the tagged template.
+ * @param values - Interpolated values between the string parts.
+ * @returns Flattened array of resolved string tokens and/or raw interpolated values (e.g. Buffers).
+ */
+function tokenizeTemplate(strings: readonly string[], values: any[]): any[] {
+    const tokens: any[] = [];
+    let current: any[] = [];
+    let quote: '"' | '\'' | null = null;
+
+    const flush = () => {
+        if (current.length === 0) return;
+        if (current.length === 1 && typeof current[0] !== 'string') {
+            tokens.push(current[0]);
+        } else {
+            tokens.push(current.map((p) => typeof p === 'string' ? p : String(p)).join(''));
+        }
+        current = [];
+    };
+
+    const pushText = (text: string) => {
+        let i = 0;
+        while (i < text.length) {
+            if (quote) {
+                const end = text.indexOf(quote, i);
+                if (end === -1) {
+                    current.push(text.slice(i));
+                    i = text.length;
+                } else {
+                    current.push(text.slice(i, end));
+                    quote = null;
+                    i = end + 1;
+                }
+                continue;
+            }
+            const ch = text[i];
+            if (ch === '"' || ch === '\'') {
+                quote = ch;
+                i++;
+                continue;
+            }
+            if (/\s/.test(ch)) {
+                flush();
+                i++;
+                continue;
+            }
+            let j = i;
+            while (j < text.length && !/["'\s]/.test(text[j])) j++;
+            current.push(text.slice(i, j));
+            i = j;
+        }
+    };
+
+    strings.forEach((str, idx) => {
+        pushText(str);
+        if (idx < values.length) current.push(values[idx]);
+    });
+    flush();
+
+    return tokens;
+}
+
+/**
+ * Merges a tagged-template invocation (`[strings, ...values]`) into a flat array of argv tokens.
  * Used to reconstruct command-line arguments that mix static strings and dynamic Buffer inputs.
  *
  * @param jsonArray - Array where first element is string template parts, followed by interpolated values (often Buffers).
  * @returns Flattened array of strings and Buffers ready for CLI argument construction.
  */
 function mergeToInterleavedArray(jsonArray: (string[] | any)[]): (string | any)[] {
-    const result: (string | Buffer)[] = [];
-
-    if (Array.isArray(jsonArray[0])) {
-        const strings = jsonArray[0] as string[];
-        let bufferIndex = 1;
-
-        for (const str of strings) {
-            result.push(str);
-            if (bufferIndex < jsonArray.length) {
-                const item = jsonArray[bufferIndex];
-                result.push(item);
-                bufferIndex++;
-            }
-        }
-    }
-
-    return result;
+    if (!Array.isArray(jsonArray[0])) return [];
+    const strings = jsonArray[0] as string[];
+    const values = jsonArray.slice(1);
+    return tokenizeTemplate(strings, values);
 }
 
 /**
@@ -161,7 +220,7 @@ export class OpenSSL {
                 if (prop in OpenSSL && OpenSSL[prop as keyof OpenSSL]) {
                     return OpenSSL[prop as keyof OpenSSL];
                 } else {
-                    throw 'Unable to determine target property';
+                    throw new Error('Unable to determine target property');
                 }
             }
         }
@@ -197,7 +256,7 @@ export class OpenSSL {
                 return arg?.toString() as string;
             }));
 
-            exec(['openssl', ' ', ...execArgs].join(''), {cwd, encoding: 'utf-8'}, async (error, stdout, stderr) => {
+            execFile('openssl', execArgs, {cwd, encoding: 'utf-8', maxBuffer: 64 * 1024 * 1024}, async (error, stdout, stderr) => {
                 if (stdout && stdout.length > 0) output.push(this.TransformBuffer(Buffer.from(stdout)));
                 if (error) reject(new OpenSSLError(stderr, execArgs, error));
             })
@@ -216,7 +275,7 @@ export class OpenSSL {
                         }
                     }
                     const out = Object.assign(output, {args});
-                    return rmdir(cwd).then(() => resolve(out), () => resolve(out));
+                    return rm(cwd, {recursive: true, force: true}).then(() => resolve(out), () => resolve(out));
                 });
         }));
     }
@@ -231,12 +290,13 @@ export class OpenSSL {
      */
     public static init() {
         return new Promise<string>((resolve, reject) =>
-            exec('openssl version', {encoding: 'utf-8'}, (err, stdout) => {
+            execFile('openssl', ['version'], {encoding: 'utf-8'}, (err, stdout) => {
                 if (err) return reject(err);
                 resolve(stdout);
             })
         ).then(
             (v) => {
+                OpenSSL.HELPERS.versionRegex.lastIndex = 0;
                 const version = OpenSSL.HELPERS.versionRegex.exec(v);
                 OpenSSL.VERSION = {
                     major: parseInt(version?.groups?.['major'] ?? '-1'),
@@ -252,12 +312,12 @@ export class OpenSSL {
                 };
             },
             (reason) => {
-                if (reason.message.includes("not recognized")) {
+                if (reason.code === 'ENOENT' || reason.message?.includes("not recognized")) {
                     OpenSSLError.NOT_INSTALLED(reason);
                 } else {
                     console.error(reason);
                 }
-                process.exit(1);
+                throw reason;
             }
         );
     }

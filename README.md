@@ -1,7 +1,8 @@
 # @sourceregistry/node-openssl
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Release to NPM](https://github.com/SourceRegistry/node-openssl/actions/workflows/publish-npm.yml/badge.svg)](https://github.com/SourceRegistry/node-openssl/actions/workflows/publish-npm.yml)
+[![npm version](https://img.shields.io/npm/v/@sourceregistry/node-openssl.svg)](https://www.npmjs.com/package/@sourceregistry/node-openssl)
+[![CI](https://github.com/SourceRegistry/node-openssl/actions/workflows/ci.yml/badge.svg)](https://github.com/SourceRegistry/node-openssl/actions/workflows/ci.yml)
 
 A lightweight, promise-based TypeScript wrapper for executing **OpenSSL** CLI commands directly from Node.js, with rich
 buffer enhancements and a fluent, proxy-powered API.
@@ -75,11 +76,14 @@ console.log('OpenSSL Version:', openssl.version);
 
 ### File I/O and Temporary Workdir
 
-You can pass `Buffer` objects directly — they’re automatically written to temp files:
+You can pass `Buffer` objects directly — they’re automatically written to temp files (commands run
+without a shell, so this is the safe way to pass dynamic/untrusted data, not shell substitution):
 
 ```typescript
 const csrBuffer = Buffer.from('...');
-const signedCert = await openssl`x509 -req -CA ca.crt -CAkey ca.key -in <(echo "${csrBuffer}") -outform PEM`;
+const caCertBuffer = await readFile('ca.crt');
+const caKeyBuffer = await readFile('ca.key');
+const signedCert = await openssl`x509 -req -CA ${caCertBuffer} -CAkey ${caKeyBuffer} -in ${csrBuffer} -outform PEM`;
 ```
 
 Files produced by OpenSSL (e.g., `.crt`, `.pem`) are automatically read and included in the output array.
